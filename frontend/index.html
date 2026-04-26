@@ -66,6 +66,7 @@
         .score-fill.tree { background: linear-gradient(90deg, #7cb342, #9ccc65); }
         .score-fill.imperv { background: linear-gradient(90deg, #ff6f00, #ffb74d); }
         .score-fill.income { background: linear-gradient(90deg, #d32f2f, #ff5252); }
+        .score-fill.temp { background: linear-gradient(90deg, #e65100, #ff9100); }
         
         .score-badge {
             display: inline-block; padding: 8px 16px; border-radius: 6px;
@@ -130,7 +131,7 @@
             <div class="component-scores">
                 <div class="score-item">
                     <div class="score-label">
-                        <span class="score-name">🌳 Tree Score</span>
+                        <span class="score-name">🌳 Tree Deficit</span>
                         <span class="score-val" id="score-tree-val"></span>
                     </div>
                     <div class="score-bar"><div class="score-fill tree" id="score-tree-bar"></div></div>
@@ -149,14 +150,22 @@
                     </div>
                     <div class="score-bar"><div class="score-fill income" id="score-income-bar"></div></div>
                 </div>
+                <div class="score-item">
+                    <div class="score-label">
+                        <span class="score-name">🌡️ Surface Temperature</span>
+                        <span class="score-val" id="score-temp-val"></span>
+                    </div>
+                    <div class="score-bar"><div class="score-fill temp" id="score-temp-bar"></div></div>
+                </div>
             </div>
-            
             <div class="metric"><span class="metric-label">Street Trees</span>
                 <span class="metric-value" id="detail-trees"></span></div>
             <div class="metric"><span class="metric-label">Impervious Surface</span>
                 <span class="metric-value" id="detail-imperv"></span></div>
             <div class="metric"><span class="metric-label">Median Income</span>
                 <span class="metric-value" id="detail-income"></span></div>
+            <div class="metric"><span class="metric-label">Surface Temperature</span>
+                <span class="metric-value" id="detail-temp"></span></div>
         </div>
         <div id="ranking">
             <h3>Top 20 Most Heat-Indebted Tracts</h3>
@@ -232,6 +241,11 @@
             
             document.getElementById('score-income-val').textContent = (incomeScore * 100).toFixed(0);
             document.getElementById('score-income-bar').style.width = (incomeScore * 100) + '%';
+
+            const tempScore = props.surface_temp_score || 0;
+            document.getElementById('score-temp-val').textContent = (tempScore * 100).toFixed(0);
+            document.getElementById('score-temp-bar').style.width = (tempScore * 100) + '%';
+            document.getElementById('detail-temp').textContent = props.surface_temp_c ? props.surface_temp_c.toFixed(1) + '°C' : 'N/A';
             
             document.getElementById('detail-trees').textContent = props.tree_count.toLocaleString();
             document.getElementById('detail-imperv').textContent = 
