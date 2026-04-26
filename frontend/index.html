@@ -54,8 +54,9 @@
         #tract-detail.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .tract-id { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
-        .tract-name { font-size: 18px; font-weight: 600; margin-bottom: 16px; line-height: 1.3; }
+        /* Typography for Neighborhood */
+        .neighborhood-name { font-size: 11px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .tract-name { font-size: 22px; font-weight: 700; margin-bottom: 20px; line-height: 1.2; letter-spacing: -0.3px; }
         
         .score-hero {
             background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass);
@@ -81,10 +82,21 @@
         .borough-btn.active { background: var(--text-main); color: #000; border-color: var(--text-main); }
 
         /* Legend - LEFT */
-        #legend { bottom: 32px; left: 24px; padding: 16px 20px; width: 280px; }
-        #legend h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; }
-        .legend-gradient { height: 8px; border-radius: 4px; margin-bottom: 8px; background: linear-gradient(to right, #ffffb2, #fed976, #feb24c, #fd8d3c, #fc4e2a, #e31a1c, #b10026); }
-        .legend-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+        #legend { bottom: 32px; left: 24px; padding: 16px 20px; width: 180px; }
+        #legend h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #fff; margin-bottom: 12px; font-weight: 700;}
+        .legend-item { display: flex; align-items: center; margin: 8px 0; }
+        .legend-color { width: 20px; height: 20px; margin-right: 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+        .legend-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+        /* Customizing MapLibre's Default Controls for Dark Mode */
+        .maplibregl-ctrl-group {
+            background-color: var(--bg-glass) !important;
+            border: 1px solid var(--border-glass) !important;
+            backdrop-filter: blur(16px);
+        }
+        .maplibregl-ctrl button { filter: invert(1) hue-rotate(180deg); opacity: 0.8; }
+        .maplibregl-ctrl button:hover { opacity: 1; }
+        .maplibregl-ctrl-group:not(:empty) { box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important; }
 
         /* AI Chat Trigger & Dialog - RIGHT */
         #ai-trigger {
@@ -172,11 +184,12 @@
         <div class="content-scroll">
             <div id="empty-state">
                 <p>Hover over the map to explore heat inequality across New York City census tracts.</p><br>
-                <p>Click a tract to lock the selection.</p>
+                <p>Click an area to lock the selection.</p>
             </div>
             <div id="tract-detail">
-                <div class="tract-id" id="detail-id"></div>
+                <div class="neighborhood-name" id="detail-neighborhood"></div>
                 <div class="tract-name" id="detail-name"></div>
+                
                 <div class="score-hero">
                     <h3>Heat Debt Score</h3>
                     <div class="value" id="detail-score">--</div>
@@ -211,9 +224,14 @@
     </div>
 
     <div id="legend" class="glass-panel">
-        <h4>Heat Debt Index</h4>
-        <div class="legend-gradient"></div>
-        <div class="legend-labels"><span>Low (0.0)</span><span>High (1.0+)</span></div>
+        <h4>Heat Debt Score</h4>
+        <div class="legend-item"><div class="legend-color" style="background:#ffffb2"></div><span class="legend-label">0.0 - 0.1</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fed976"></div><span class="legend-label">0.1 - 0.2</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#feb24c"></div><span class="legend-label">0.2 - 0.35</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fd8d3c"></div><span class="legend-label">0.35 - 0.5</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fc4e2a"></div><span class="legend-label">0.5 - 0.65</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#e31a1c"></div><span class="legend-label">0.65 - 0.8</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#b10026"></div><span class="legend-label">0.8+</span></div>
     </div>
 
     <button id="ai-trigger" class="glass-panel">
@@ -235,7 +253,7 @@
         
         <div id="chat-history">
             <div class="chat-bubble chat-ai" id="default-chat-state">
-                I am your automated Heat Analyst. Here are the top 20 most heat-indebted census tracts in NYC right now:
+                I am your automated Heat Analyst. Here are the top 20 most heat-indebted areas in NYC right now:
                 <div id="rank-list"></div>
             </div>
         </div>
@@ -250,48 +268,42 @@
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <script>
+        // CACHE BUSTER: Forces the browser to load your newest GeoJSON edits
+        const dataUrl = 'tracts.geojson?v=' + new Date().getTime();
+
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-            center: [-73.98, 40.73], zoom: 10.5, pitch: 45, bearing: -10, antialias: true 
+            center: [-74.02, 40.65],
+            zoom: 10.2, 
+            pitch: 65, 
+            bearing: 0, 
+            antialias: true 
         });
 
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 
-        // Dialog Logic
         const aiTrigger = document.getElementById('ai-trigger');
         const aiDialog = document.getElementById('ai-dialog');
         const closeDialog = document.getElementById('close-dialog');
         
-        aiTrigger.addEventListener('click', () => {
-            aiDialog.classList.add('active');
-            setTimeout(() => document.getElementById('chat-input').focus(), 100);
-        });
-        closeDialog.addEventListener('click', () => aiDialog.classList.remove('active'));
+        aiTrigger.onclick = () => { aiDialog.classList.add('active'); chatInput.focus(); };
+        closeDialog.onclick = () => aiDialog.classList.remove('active');
 
-        // Chat Logic
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
         const chatHistory = document.getElementById('chat-history');
 
-        // Toggle Dialog
-        aiTrigger.onclick = () => { aiDialog.classList.add('active'); chatInput.focus(); };
-        closeDialog.onclick = () => aiDialog.classList.remove('active');
-
-        // Connect AI Chat to Server.py
         async function askAI() {
             const question = chatInput.value.trim();
             if (!question) return;
 
-            // Clear default state
             const defaultState = document.getElementById('default-chat-state');
             if (defaultState) defaultState.style.display = 'none';
 
-            // Append User Question
             chatHistory.innerHTML += `<div class="chat-bubble chat-user">${question}</div>`;
             chatInput.value = '';
 
-            // Add Loading Indicator
             const loadingId = 'loading-' + Date.now();
             chatHistory.innerHTML += `<div class="chat-bubble chat-ai" id="${loadingId}"><span class="loading-dots">Analyzing data...</span></div>`;
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -334,14 +346,13 @@
         sendBtn.onclick = askAI;
         chatInput.onkeypress = (e) => { if(e.key === 'Enter') askAI(); };
 
-        // Map Selection State
         let hoveredStateId = null;
         let clickedTractId = null; 
 
         map.on('load', () => {
-            map.addSource('tracts', { 'type': 'geojson', 'data': 'tracts.geojson', 'generateId': true });
+            // Using the Cache Buster URL here
+            map.addSource('tracts', { 'type': 'geojson', 'data': dataUrl, 'generateId': true });
 
-            // Base Fill Layer
             map.addLayer({
                 'id': 'tracts-fill', 'type': 'fill', 'source': 'tracts',
                 'paint': {
@@ -353,22 +364,21 @@
                 }
             });
 
-            // Standard Borders
             map.addLayer({
-                'id': 'tracts-borders', 'type': 'line', 'source': 'tracts',
-                'paint': {
-                    'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#ffffff', 'rgba(255,255,255,0.15)'],
-                    'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 1.5, 0.5]
-                }
-            });
-
-            // Universal Selection Highlight Layer
-            map.addLayer({
-                'id': 'tracts-selected', 'type': 'line', 'source': 'tracts',
+                'id': 'tracts-local-3d', 'type': 'fill-extrusion', 'source': 'tracts',
                 'filter': ['==', 'tract_id', ''], 
                 'paint': {
-                    'line-color': '#ffffff',
-                    'line-width': 3
+                    'fill-extrusion-color': [
+                        'interpolate', ['linear'], ['get', 'heat_debt_score'],
+                        0.0, '#ffffb2', 0.2, '#fed976', 0.4, '#feb24c', 0.6, '#fd8d3c', 0.7, '#fc4e2a', 0.85, '#e31a1c', 1.0, '#b10026'
+                    ],
+                    'fill-extrusion-height': [
+                        'interpolate', ['linear'], ['get', 'heat_debt_score'],
+                        0, 50,    
+                        1, 500    
+                    ],
+                    'fill-extrusion-base': 0,
+                    'fill-extrusion-opacity': 1.0 
                 }
             });
 
@@ -376,8 +386,13 @@
                 document.getElementById('empty-state').style.display = 'none';
                 document.getElementById('tract-detail').classList.add('active');
                 
-                document.getElementById('detail-id').innerText = `Tract: ${props.tract_id || 'N/A'}`;
-                document.getElementById('detail-name').innerText = props.tract_name || 'Unknown Area';
+                const boroughStr = props.borough ? props.borough.toUpperCase() : 'NYC AREA';
+                const tractStr = props.tract_id ? ` • TRACT ${props.tract_id}` : '';
+                document.getElementById('detail-neighborhood').innerText = boroughStr + tractStr;
+                
+                // Neighborhood Fallback Logic
+                const localName = props.neighborhood || props.Neighborhood || props.nta_name || props.NTAName || props.tract_name || `Census Tract ${props.tract_id}`;
+                document.getElementById('detail-name').innerText = localName;
                 
                 const score = props.heat_debt_score || 0;
                 const scoreEl = document.getElementById('detail-score');
@@ -390,11 +405,29 @@
                 document.getElementById('val-imperv').innerText = (props.impervious_pct || 0).toFixed(1) + '%';
                 document.getElementById('pct-imperv').innerText = '(' + ((props.impervious_score || 0) * 100).toFixed(0) + 'th pct)';
 
-                document.getElementById('val-income').innerText = props.median_income > 0 ? '$' + props.median_income.toLocaleString() : 'N/A';
-                document.getElementById('pct-income').innerText = '(' + ((props.income_vuln_score || 0) * 100).toFixed(0) + 'th pct)';
+                // Cleaned up the Income Vulnerability display
+                if (props.median_income > 0) {
+                    document.getElementById('val-income').innerText = '$' + props.median_income.toLocaleString();
+                    document.getElementById('pct-income').innerText = '(' + ((props.income_vuln_score || 0) * 100).toFixed(0) + 'th pct)';
+                } else {
+                    document.getElementById('val-income').innerText = 'Data Unavailable';
+                    document.getElementById('pct-income').innerText = ''; // Hides the weird "(50th pct)" when N/A
+                }
 
-                document.getElementById('val-temp').innerText = props.surface_temp_c ? (props.surface_temp_c * 9/5 + 32).toFixed(1) + '°F' : 'N/A';
-                document.getElementById('pct-temp').innerText = '(' + ((props.surface_temp_score || 0) * 100).toFixed(0) + 'th pct)';
+                // Smart Temperature Fix: Handles both 33.4°C and 99.1°F inputs correctly
+                let rawTemp = props.surface_temp_c;
+                if (rawTemp) {
+                    let finalTempF = rawTemp;
+                    // If the temp is weirdly low (like 33.4), it's probably Celsius, so convert it.
+                    if (rawTemp < 50) {
+                        finalTempF = (rawTemp * 9/5) + 32;
+                    }
+                    document.getElementById('val-temp').innerText = finalTempF.toFixed(1) + '°F';
+                    document.getElementById('pct-temp').innerText = '(' + ((props.surface_temp_score || 0) * 100).toFixed(0) + 'th pct)';
+                } else {
+                    document.getElementById('val-temp').innerText = 'N/A';
+                    document.getElementById('pct-temp').innerText = '';
+                }
             }
 
             map.on('mousemove', 'tracts-fill', (e) => {
@@ -404,9 +437,7 @@
                     hoveredStateId = e.features[0].id;
                     map.setFeatureState({ source: 'tracts', id: hoveredStateId }, { hover: true });
                     
-                    if (!clickedTractId) {
-                        updateSidebar(e.features[0].properties);
-                    }
+                    if (!clickedTractId) updateSidebar(e.features[0].properties);
                 }
             });
 
@@ -421,45 +452,64 @@
                 }
             });
 
+            function selectAndExtrudeTract(feature) {
+                const props = feature.properties;
+                clickedTractId = props.tract_id || ''; 
+                
+                map.setFilter('tracts-local-3d', ['==', 'tract_id', clickedTractId]);
+                
+                updateSidebar(props);
+
+                let lngSum = 0, latSum = 0, pts = 0;
+                const coords = feature.geometry.type === 'MultiPolygon' ? feature.geometry.coordinates[0][0] : feature.geometry.coordinates[0];
+                coords.forEach(c => { lngSum += c[0]; latSum += c[1]; pts++; });
+                
+                map.flyTo({ 
+                    center: [lngSum/pts, latSum/pts], 
+                    zoom: 13.5, 
+                    pitch: 60, 
+                    bearing: 30, 
+                    essential: true 
+                });
+            }
+
             map.on('click', 'tracts-fill', (e) => {
-                if (e.features.length > 0) {
-                    const props = e.features[0].properties;
-                    clickedTractId = props.tract_id || ''; 
-                    
-                    map.setFilter('tracts-selected', ['==', 'tract_id', clickedTractId]);
-                    updateSidebar(props);
-                }
+                if (e.features.length > 0) selectAndExtrudeTract(e.features[0]);
             });
 
             map.on('click', (e) => {
-                const features = map.queryRenderedFeatures(e.point, { layers: ['tracts-fill'] });
+                const features = map.queryRenderedFeatures(e.point, { layers: ['tracts-fill', 'tracts-local-3d'] });
+                
                 if (!features.length) {
                     clickedTractId = null; 
-                    map.setFilter('tracts-selected', ['==', 'tract_id', '']); 
+                    
+                    map.setFilter('tracts-local-3d', ['==', 'tract_id', '']); 
+                    map.easeTo({ pitch: 65, bearing: 0, duration: 1000 }); 
+
                     document.getElementById('empty-state').style.display = 'block';
                     document.getElementById('tract-detail').classList.remove('active');
                 }
             });
 
-            // Borough Filters
             document.querySelectorAll('.borough-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     document.querySelectorAll('.borough-btn').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
                     const borough = e.target.dataset.borough;
+                    
                     if (borough === 'all') {
                         map.setFilter('tracts-fill', null);
-                        map.setFilter('tracts-borders', null);
-                        map.flyTo({ center: [-73.98, 40.73], zoom: 10.5, pitch: 45 });
+                        
+                        map.setFilter('tracts-local-3d', ['==', 'tract_id', '']); 
+                        map.flyTo({ center: [-74.02, 40.65], zoom: 10.2, pitch: 65, bearing: 0 });
                     } else {
                         map.setFilter('tracts-fill', ['==', 'borough', borough]);
-                        map.setFilter('tracts-borders', ['==', 'borough', borough]);
                     }
                 });
             });
 
-            // Fetch Data and load into default Top 20 Chat Interface
-            fetch('tracts.geojson')
+            // Using the Cache Buster URL here too
+            fetch(dataUrl)
                 .then(r => r.json())
                 .then(data => {
                     const top20 = data.features
@@ -471,24 +521,17 @@
                     top20.forEach((f, i) => {
                         const div = document.createElement('div');
                         div.className = 'rank-item';
+                        
+                        const displayNTA = f.properties.neighborhood || f.properties.Neighborhood || f.properties.nta_name || f.properties.NTAName || f.properties.tract_name || `Tract ${f.properties.tract_id}`;
+                        
                         div.innerHTML = `
                             <span class="rank-num">${i + 1}</span>
-                            <span class="rank-name">${f.properties.tract_name || 'Tract ' + f.properties.tract_id}</span>
+                            <span class="rank-name">${displayNTA}</span>
                             <span class="rank-score">${(f.properties.heat_debt_score * 100).toFixed(1)}</span>
                         `;
                         
                         div.onclick = () => {
-                            clickedTractId = f.properties.tract_id || ''; 
-                            updateSidebar(f.properties);
-                            
-                            map.setFilter('tracts-selected', ['==', 'tract_id', clickedTractId]);
-                            
-                            let lngSum = 0, latSum = 0, pts = 0;
-                            const coords = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
-                            coords.forEach(c => { lngSum += c[0]; latSum += c[1]; pts++; });
-                            
-                            map.flyTo({ center: [lngSum/pts, latSum/pts], zoom: 14, pitch: 60, essential: true });
-                            
+                            selectAndExtrudeTract(f);
                             if (window.innerWidth < 768) aiDialog.classList.remove('active');
                         };
                         rankList.appendChild(div);
