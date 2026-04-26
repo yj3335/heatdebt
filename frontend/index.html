@@ -68,6 +68,7 @@
         .metric-row:last-child { border-bottom: none; }
         .m-label { font-size: 13px; color: var(--text-muted); }
         .m-val { font-size: 14px; font-weight: 600; }
+        .m-pct { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
 
         /* Bottom Controls */
         #controls { bottom: 32px; left: 50%; transform: translateX(-50%); padding: 10px; display: flex; gap: 8px; }
@@ -180,10 +181,22 @@
                     <h3>Heat Debt Score</h3>
                     <div class="value" id="detail-score">--</div>
                 </div>
-                <div class="metric-row"><span class="m-label">Tree Deficit Score</span><span class="m-val" id="val-trees">--</span></div>
-                <div class="metric-row"><span class="m-label">Impervious Surface</span><span class="m-val" id="val-imperv">--</span></div>
-                <div class="metric-row"><span class="m-label">Income Vulnerability</span><span class="m-val" id="val-income">--</span></div>
-                <div class="metric-row"><span class="m-label">Surface Temp</span><span class="m-val" id="val-temp">--</span></div>
+                <div class="metric-row">
+                    <span class="m-label">Tree Deficit</span>
+                    <span class="m-val"><span id="val-trees">--</span> <span class="m-pct" id="pct-trees"></span></span>
+                </div>
+                <div class="metric-row">
+                    <span class="m-label">Impervious Surface</span>
+                    <span class="m-val"><span id="val-imperv">--</span> <span class="m-pct" id="pct-imperv"></span></span>
+                </div>
+                <div class="metric-row">
+                    <span class="m-label">Income Vulnerability</span>
+                    <span class="m-val"><span id="val-income">--</span> <span class="m-pct" id="pct-income"></span></span>
+                </div>
+                <div class="metric-row">
+                    <span class="m-label">Surface Temperature</span>
+                    <span class="m-val"><span id="val-temp">--</span> <span class="m-pct" id="pct-temp"></span></span>
+                </div>
             </div>
         </div>
     </div>
@@ -371,10 +384,17 @@
                 scoreEl.innerText = (score * 100).toFixed(1);
                 scoreEl.style.color = score > 0.6 ? '#fc4e2a' : '#fed976';
 
-                document.getElementById('val-trees').innerText = ((props.tree_deficit_score || 0) * 100).toFixed(0);
-                document.getElementById('val-imperv').innerText = ((props.impervious_score || 0) * 100).toFixed(0);
-                document.getElementById('val-income').innerText = ((props.income_vuln_score || 0) * 100).toFixed(0);
+                document.getElementById('val-trees').innerText = (props.tree_count || 0).toLocaleString() + ' trees';
+                document.getElementById('pct-trees').innerText = '(' + ((props.tree_deficit_score || 0) * 100).toFixed(0) + 'th pct)';
+
+                document.getElementById('val-imperv').innerText = (props.impervious_pct || 0).toFixed(1) + '%';
+                document.getElementById('pct-imperv').innerText = '(' + ((props.impervious_score || 0) * 100).toFixed(0) + 'th pct)';
+
+                document.getElementById('val-income').innerText = props.median_income > 0 ? '$' + props.median_income.toLocaleString() : 'N/A';
+                document.getElementById('pct-income').innerText = '(' + ((props.income_vuln_score || 0) * 100).toFixed(0) + 'th pct)';
+
                 document.getElementById('val-temp').innerText = props.surface_temp_c ? props.surface_temp_c.toFixed(1) + '°C' : 'N/A';
+                document.getElementById('pct-temp').innerText = '(' + ((props.surface_temp_score || 0) * 100).toFixed(0) + 'th pct)';
             }
 
             map.on('mousemove', 'tracts-fill', (e) => {
