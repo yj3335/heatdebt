@@ -393,7 +393,7 @@
                 document.getElementById('val-income').innerText = props.median_income > 0 ? '$' + props.median_income.toLocaleString() : 'N/A';
                 document.getElementById('pct-income').innerText = '(' + ((props.income_vuln_score || 0) * 100).toFixed(0) + 'th pct)';
 
-                document.getElementById('val-temp').innerText = props.surface_temp_c ? props.surface_temp_c.toFixed(1) + '°C' : 'N/A';
+                document.getElementById('val-temp').innerText = props.surface_temp_c ? (props.surface_temp_c * 9/5 + 32).toFixed(1) + '°F' : 'N/A';
                 document.getElementById('pct-temp').innerText = '(' + ((props.surface_temp_score || 0) * 100).toFixed(0) + 'th pct)';
             }
 
