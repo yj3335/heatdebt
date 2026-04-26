@@ -14,7 +14,7 @@
             --border-glass: rgba(255, 255, 255, 0.1);
             --text-main: #f8f9fa;
             --text-muted: #a1a1aa;
-            --accent: #ffffff;
+            --accent: #fd8d3c; 
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -33,9 +33,10 @@
             z-index: 10;
         }
 
-        /* Sidebar Overlay */
+        /* Sidebar Overlay - Moved to LEFT */
         #sidebar {
-            top: 24px; left: 24px; width: 340px; max-height: calc(100vh - 48px);
+            top: 24px; left: 24px; 
+            width: 340px; max-height: calc(100vh - 48px);
             display: flex; flex-direction: column; overflow: hidden;
         }
 
@@ -43,15 +44,12 @@
         .header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
         .header p { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Dynamic Content Area */
         .content-scroll { overflow-y: auto; padding: 24px; }
         .content-scroll::-webkit-scrollbar { width: 6px; }
         .content-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
-        /* State Empty */
         #empty-state { text-align: center; color: var(--text-muted); font-size: 14px; line-height: 1.6; padding: 20px 0; }
         
-        /* Details View */
         #tract-detail { display: none; }
         #tract-detail.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -81,11 +79,80 @@
         .borough-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
         .borough-btn.active { background: var(--text-main); color: #000; border-color: var(--text-main); }
 
-        /* Legend */
-        #legend { bottom: 32px; right: 24px; padding: 16px 20px; width: 280px; }
+        /* Legend - Moved to LEFT */
+        #legend { bottom: 32px; left: 24px; padding: 16px 20px; width: 280px; }
         #legend h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; }
-        .legend-gradient { height: 8px; border-radius: 4px; background: linear-gradient(to right, #ffffb2, #fed976, #feb24c, #fd8d3c, #fc4e2a, #e31a1c, #b10026); margin-bottom: 8px; }
+        .legend-gradient { height: 8px; border-radius: 4px; margin-bottom: 8px; background: linear-gradient(to right, #ffffb2, #fed976, #feb24c, #fd8d3c, #fc4e2a, #e31a1c, #b10026); }
         .legend-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+
+        /* --- AI Chat Trigger & Dialog - Moved to RIGHT --- */
+        #ai-trigger {
+            bottom: 32px; right: 24px; width: 56px; height: 56px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            color: var(--text-main); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20; border: 1px solid var(--border-glass);
+        }
+        #ai-trigger:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); transform: scale(1.05); }
+        #ai-trigger svg { width: 24px; height: 24px; }
+        
+        #ai-dialog {
+            bottom: 100px; right: 24px; width: 360px; height: 60vh; min-height: 450px;
+            display: flex; flex-direction: column; overflow: hidden;
+            opacity: 0; pointer-events: none; transform: translateY(15px) scale(0.98);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 20;
+            transform-origin: bottom right; /* Changed to spring from right corner */
+        }
+        #ai-dialog.active { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+
+        .dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-glass); }
+        .dialog-header h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        #close-dialog { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; transition: 0.2s; }
+        #close-dialog:hover { color: #fff; transform: scale(1.1); }
+
+        /* Chat Layout */
+        #chat-history { 
+            flex: 1; padding: 16px 20px; overflow-y: auto; 
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        #chat-history::-webkit-scrollbar { width: 6px; }
+        #chat-history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .chat-bubble { max-width: 90%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+        .chat-ai { background: rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border-glass); }
+        .chat-user { background: rgba(253, 141, 60, 0.15); border: 1px solid rgba(253, 141, 60, 0.3); align-self: flex-end; border-bottom-right-radius: 4px; }
+        
+        .chat-input-area { 
+            padding: 16px 20px; border-top: 1px solid var(--border-glass); 
+            display: flex; gap: 10px; background: rgba(0,0,0,0.2);
+        }
+        #chat-input {
+            flex: 1; padding: 12px 16px; border-radius: 20px;
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border-glass);
+            color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;
+        }
+        #chat-input:focus { border-color: var(--accent); }
+        #chat-input::placeholder { color: rgba(255,255,255,0.3); }
+        
+        #send-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid var(--border-glass);
+            color: #fff; width: 44px; height: 44px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        #send-btn:hover { background: var(--accent); border-color: var(--accent); color: #000; }
+        #send-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* Restyled List Items for AI Bubble */
+        #rank-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+        .rank-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 8px 10px;
+            background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass);
+            border-radius: 6px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .rank-item:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
+        .rank-num { color: var(--text-muted); width: 24px; font-size: 12px; font-weight: 600; }
+        .rank-name { flex: 1; font-size: 12px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 8px; }
+        .rank-score { font-size: 12px; font-weight: 600; color: var(--accent); }
     </style>
 </head>
 <body>
@@ -97,39 +164,22 @@
             <h1>HeatDebt</h1>
             <p>NYC Urban Heat Auditor</p>
         </div>
-        
         <div class="content-scroll">
             <div id="empty-state">
-                <p>Hover over the map to explore heat inequality across New York City census tracts.</p>
-                <br>
+                <p>Hover over the map to explore heat inequality across New York City census tracts.</p><br>
                 <p>Click a tract to lock the selection.</p>
             </div>
-
             <div id="tract-detail">
                 <div class="tract-id" id="detail-id"></div>
                 <div class="tract-name" id="detail-name"></div>
-                
                 <div class="score-hero">
                     <h3>Heat Debt Score</h3>
                     <div class="value" id="detail-score">--</div>
                 </div>
-
-                <div class="metric-row">
-                    <span class="m-label">Tree Deficit Score</span>
-                    <span class="m-val" id="val-trees">--</span>
-                </div>
-                <div class="metric-row">
-                    <span class="m-label">Impervious Surface</span>
-                    <span class="m-val" id="val-imperv">--</span>
-                </div>
-                <div class="metric-row">
-                    <span class="m-label">Income Vulnerability</span>
-                    <span class="m-val" id="val-income">--</span>
-                </div>
-                <div class="metric-row">
-                    <span class="m-label">Surface Temperature</span>
-                    <span class="m-val" id="val-temp">--</span>
-                </div>
+                <div class="metric-row"><span class="m-label">Tree Deficit Score</span><span class="m-val" id="val-trees">--</span></div>
+                <div class="metric-row"><span class="m-label">Impervious Surface</span><span class="m-val" id="val-imperv">--</span></div>
+                <div class="metric-row"><span class="m-label">Income Vulnerability</span><span class="m-val" id="val-income">--</span></div>
+                <div class="metric-row"><span class="m-label">Surface Temp</span><span class="m-val" id="val-temp">--</span></div>
             </div>
         </div>
     </div>
@@ -146,85 +196,126 @@
     <div id="legend" class="glass-panel">
         <h4>Heat Debt Index</h4>
         <div class="legend-gradient"></div>
-        <div class="legend-labels">
-            <span>Low (0.0)</span>
-            <span>High (1.0+)</span>
+        <div class="legend-labels"><span>Low (0.0)</span><span>High (1.0+)</span></div>
+    </div>
+
+    <button id="ai-trigger" class="glass-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+            <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+            <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+    </button>
+
+    <div id="ai-dialog" class="glass-panel">
+        <div class="dialog-header">
+            <h2>Ask HeatDebt AI</h2>
+            <button id="close-dialog">&times;</button>
+        </div>
+        
+        <div id="chat-history">
+            <div class="chat-bubble chat-ai" id="default-chat-state">
+                I am your automated Heat Analyst. Here are the top 20 most heat-indebted census tracts in NYC right now:
+                <div id="rank-list"></div>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Message HeatDebt AI..." autocomplete="off"/>
+            <button id="send-btn">
+                <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+            </button>
         </div>
     </div>
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <script>
-        // Initialize WebGL Map
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-            center: [-73.98, 40.73],
-            zoom: 10.5,
-            pitch: 45, 
-            bearing: -10,
-            antialias: true 
+            center: [-73.98, 40.73], zoom: 10.5, pitch: 45, bearing: -10, antialias: true 
         });
 
-        // Add Zoom/Rotation controls
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 
+        // Dialog Logic
+        const aiTrigger = document.getElementById('ai-trigger');
+        const aiDialog = document.getElementById('ai-dialog');
+        const closeDialog = document.getElementById('close-dialog');
+        
+        aiTrigger.addEventListener('click', () => {
+            aiDialog.classList.add('active');
+            setTimeout(() => document.getElementById('chat-input').focus(), 100);
+        });
+        closeDialog.addEventListener('click', () => aiDialog.classList.remove('active'));
+
+        // Chat Logic
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatHistory = document.getElementById('chat-history');
+
+        function handleSend() {
+            const text = chatInput.value.trim();
+            if(!text) return;
+
+            const defaultState = document.getElementById('default-chat-state');
+            if (defaultState) defaultState.style.display = 'none';
+
+            chatHistory.innerHTML += `<div class="chat-bubble chat-user">${text}</div>`;
+
+            const loadingId = 'loading-' + Date.now();
+            chatHistory.innerHTML += `<div class="chat-bubble chat-ai" id="${loadingId}">
+                <em>Connecting to backend to analyze: "${text}"...</em>
+            </div>`;
+
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            chatInput.value = '';
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSend(); });
+
+        // Lock & Hover Tracking States
         let hoveredStateId = null;
-        let clickedStateId = null;
+        let clickedTractId = null; 
 
         map.on('load', () => {
-            map.addSource('tracts', {
-                'type': 'geojson',
-                'data': 'tracts.geojson',
-                'generateId': true 
-            });
+            map.addSource('tracts', { 'type': 'geojson', 'data': 'tracts.geojson', 'generateId': true });
 
-            // The Heat Map Fill Layer
+            // Base Fill Layer
             map.addLayer({
-                'id': 'tracts-fill',
-                'type': 'fill',
-                'source': 'tracts',
+                'id': 'tracts-fill', 'type': 'fill', 'source': 'tracts',
                 'paint': {
                     'fill-color': [
                         'interpolate', ['linear'], ['get', 'heat_debt_score'],
-                        0.0, '#ffffb2',
-                        0.2, '#fed976',
-                        0.4, '#feb24c',
-                        0.6, '#fd8d3c',
-                        0.7, '#fc4e2a',
-                        0.85, '#e31a1c',
-                        1.0, '#b10026'
+                        0.0, '#ffffb2', 0.2, '#fed976', 0.4, '#feb24c', 0.6, '#fd8d3c', 0.7, '#fc4e2a', 0.85, '#e31a1c', 1.0, '#b10026'
                     ],
-                    'fill-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false], 0.9,
-                        ['boolean', ['feature-state', 'clicked'], false], 1.0,
-                        0.6
-                    ]
+                    'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.9, 0.75]
                 }
             });
 
-            // The Crisp Borders Layer (Pure White Highlight when active)
+            // Standard Borders
             map.addLayer({
-                'id': 'tracts-borders',
-                'type': 'line',
-                'source': 'tracts',
+                'id': 'tracts-borders', 'type': 'line', 'source': 'tracts',
                 'paint': {
-                    'line-color': [
-                        'case',
-                        ['boolean', ['feature-state', 'clicked'], false], '#ffffff',
-                        ['boolean', ['feature-state', 'hover'], false], '#ffffff',
-                        'rgba(255,255,255,0.1)' 
-                    ],
-                    'line-width': [
-                        'case',
-                        ['boolean', ['feature-state', 'clicked'], false], 2.5,
-                        ['boolean', ['feature-state', 'hover'], false], 1.5,
-                        0.5
-                    ]
+                    'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#ffffff', 'rgba(255,255,255,0.15)'],
+                    'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 1.5, 0.5]
                 }
             });
 
-            // UI Interaction Logic
+            // Universal Selection Highlight Layer
+            map.addLayer({
+                'id': 'tracts-selected', 'type': 'line', 'source': 'tracts',
+                'filter': ['==', 'tract_id', ''], 
+                'paint': {
+                    'line-color': '#ffffff',
+                    'line-width': 3
+                }
+            });
+
             function updateSidebar(props) {
                 document.getElementById('empty-state').style.display = 'none';
                 document.getElementById('tract-detail').classList.add('active');
@@ -240,22 +331,17 @@
                 document.getElementById('val-trees').innerText = ((props.tree_deficit_score || 0) * 100).toFixed(0);
                 document.getElementById('val-imperv').innerText = ((props.impervious_score || 0) * 100).toFixed(0);
                 document.getElementById('val-income').innerText = ((props.income_vuln_score || 0) * 100).toFixed(0);
-                
-                // Added logic for Surface Temperature formatting
                 document.getElementById('val-temp').innerText = props.surface_temp_c ? props.surface_temp_c.toFixed(1) + '°C' : 'N/A';
             }
 
-            // Map Hover Effect
             map.on('mousemove', 'tracts-fill', (e) => {
                 map.getCanvas().style.cursor = 'pointer';
                 if (e.features.length > 0) {
-                    if (hoveredStateId !== null) {
-                        map.setFeatureState({ source: 'tracts', id: hoveredStateId }, { hover: false });
-                    }
+                    if (hoveredStateId !== null) map.setFeatureState({ source: 'tracts', id: hoveredStateId }, { hover: false });
                     hoveredStateId = e.features[0].id;
                     map.setFeatureState({ source: 'tracts', id: hoveredStateId }, { hover: true });
                     
-                    if (clickedStateId === null) {
+                    if (!clickedTractId) {
                         updateSidebar(e.features[0].properties);
                     }
                 }
@@ -263,35 +349,30 @@
 
             map.on('mouseleave', 'tracts-fill', () => {
                 map.getCanvas().style.cursor = '';
-                if (hoveredStateId !== null) {
-                    map.setFeatureState({ source: 'tracts', id: hoveredStateId }, { hover: false });
-                }
+                if (hoveredStateId !== null) map.setFeatureState({ source: 'tracts', id: hoveredStateId }, { hover: false });
                 hoveredStateId = null;
                 
-                if (clickedStateId === null) {
+                if (!clickedTractId) {
                     document.getElementById('empty-state').style.display = 'block';
                     document.getElementById('tract-detail').classList.remove('active');
                 }
             });
 
-            // Map Click Effect
             map.on('click', 'tracts-fill', (e) => {
                 if (e.features.length > 0) {
-                    if (clickedStateId !== null) {
-                        map.setFeatureState({ source: 'tracts', id: clickedStateId }, { clicked: false });
-                    }
-                    clickedStateId = e.features[0].id;
-                    map.setFeatureState({ source: 'tracts', id: clickedStateId }, { clicked: true });
-                    updateSidebar(e.features[0].properties);
+                    const props = e.features[0].properties;
+                    clickedTractId = props.tract_id || ''; 
+                    
+                    map.setFilter('tracts-selected', ['==', 'tract_id', clickedTractId]);
+                    updateSidebar(props);
                 }
             });
 
-            // Click outside to reset
             map.on('click', (e) => {
                 const features = map.queryRenderedFeatures(e.point, { layers: ['tracts-fill'] });
-                if (!features.length && clickedStateId !== null) {
-                    map.setFeatureState({ source: 'tracts', id: clickedStateId }, { clicked: false });
-                    clickedStateId = null;
+                if (!features.length) {
+                    clickedTractId = null; 
+                    map.setFilter('tracts-selected', ['==', 'tract_id', '']); 
                     document.getElementById('empty-state').style.display = 'block';
                     document.getElementById('tract-detail').classList.remove('active');
                 }
@@ -302,7 +383,6 @@
                 btn.addEventListener('click', (e) => {
                     document.querySelectorAll('.borough-btn').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
-                    
                     const borough = e.target.dataset.borough;
                     if (borough === 'all') {
                         map.setFilter('tracts-fill', null);
@@ -314,6 +394,44 @@
                     }
                 });
             });
+
+            // Fetch Data and load into default Top 20 Chat Interface
+            fetch('tracts.geojson')
+                .then(r => r.json())
+                .then(data => {
+                    const top20 = data.features
+                        .sort((a, b) => b.properties.heat_debt_score - a.properties.heat_debt_score)
+                        .slice(0, 20);
+                    
+                    const rankList = document.getElementById('rank-list');
+                    
+                    top20.forEach((f, i) => {
+                        const div = document.createElement('div');
+                        div.className = 'rank-item';
+                        div.innerHTML = `
+                            <span class="rank-num">${i + 1}</span>
+                            <span class="rank-name">${f.properties.tract_name || 'Tract ' + f.properties.tract_id}</span>
+                            <span class="rank-score">${(f.properties.heat_debt_score * 100).toFixed(1)}</span>
+                        `;
+                        
+                        div.onclick = () => {
+                            clickedTractId = f.properties.tract_id || ''; 
+                            updateSidebar(f.properties);
+                            
+                            map.setFilter('tracts-selected', ['==', 'tract_id', clickedTractId]);
+                            
+                            let lngSum = 0, latSum = 0, pts = 0;
+                            const coords = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
+                            coords.forEach(c => { lngSum += c[0]; latSum += c[1]; pts++; });
+                            
+                            map.flyTo({ center: [lngSum/pts, latSum/pts], zoom: 14, pitch: 60, essential: true });
+                            
+                            if (window.innerWidth < 768) aiDialog.classList.remove('active');
+                        };
+                        rankList.appendChild(div);
+                    });
+                })
+                .catch(err => console.error("Could not load default list:", err));
         });
     </script>
 </body>
