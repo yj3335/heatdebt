@@ -33,7 +33,7 @@
             z-index: 10;
         }
 
-        /* Sidebar Overlay - Moved to LEFT */
+        /* Sidebar Overlay - LEFT */
         #sidebar {
             top: 24px; left: 24px; 
             width: 340px; max-height: calc(100vh - 48px);
@@ -79,13 +79,13 @@
         .borough-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
         .borough-btn.active { background: var(--text-main); color: #000; border-color: var(--text-main); }
 
-        /* Legend - Moved to LEFT */
+        /* Legend - LEFT */
         #legend { bottom: 32px; left: 24px; padding: 16px 20px; width: 280px; }
         #legend h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; }
         .legend-gradient { height: 8px; border-radius: 4px; margin-bottom: 8px; background: linear-gradient(to right, #ffffb2, #fed976, #feb24c, #fd8d3c, #fc4e2a, #e31a1c, #b10026); }
         .legend-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
 
-        /* --- AI Chat Trigger & Dialog - Moved to RIGHT --- */
+        /* AI Chat Trigger & Dialog - RIGHT */
         #ai-trigger {
             bottom: 32px; right: 24px; width: 56px; height: 56px; border-radius: 50%;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -100,7 +100,7 @@
             display: flex; flex-direction: column; overflow: hidden;
             opacity: 0; pointer-events: none; transform: translateY(15px) scale(0.98);
             transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 20;
-            transform-origin: bottom right; /* Changed to spring from right corner */
+            transform-origin: bottom right;
         }
         #ai-dialog.active { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
 
@@ -142,7 +142,11 @@
         #send-btn:hover { background: var(--accent); border-color: var(--accent); color: #000; }
         #send-btn svg { width: 18px; height: 18px; fill: currentColor; }
 
-        /* Restyled List Items for AI Bubble */
+        /* AI Result Table styling */
+        .chat-ai table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+        .chat-ai th { text-align: left; padding: 4px; border-bottom: 1px solid #333; color: var(--text-muted); }
+        .chat-ai td { padding: 4px; border-bottom: 1px solid #222; }
+
         #rank-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
         .rank-item {
             display: flex; justify-content: space-between; align-items: center; padding: 8px 10px;
@@ -257,28 +261,67 @@
         const sendBtn = document.getElementById('send-btn');
         const chatHistory = document.getElementById('chat-history');
 
-        function handleSend() {
-            const text = chatInput.value.trim();
-            if(!text) return;
+        // Toggle Dialog
+        aiTrigger.onclick = () => { aiDialog.classList.add('active'); chatInput.focus(); };
+        closeDialog.onclick = () => aiDialog.classList.remove('active');
 
+        // Connect AI Chat to Server.py
+        async function askAI() {
+            const question = chatInput.value.trim();
+            if (!question) return;
+
+            // Clear default state
             const defaultState = document.getElementById('default-chat-state');
             if (defaultState) defaultState.style.display = 'none';
 
-            chatHistory.innerHTML += `<div class="chat-bubble chat-user">${text}</div>`;
+            // Append User Question
+            chatHistory.innerHTML += `<div class="chat-bubble chat-user">${question}</div>`;
+            chatInput.value = '';
 
+            // Add Loading Indicator
             const loadingId = 'loading-' + Date.now();
-            chatHistory.innerHTML += `<div class="chat-bubble chat-ai" id="${loadingId}">
-                <em>Connecting to backend to analyze: "${text}"...</em>
-            </div>`;
+            chatHistory.innerHTML += `<div class="chat-bubble chat-ai" id="${loadingId}"><span class="loading-dots">Analyzing data...</span></div>`;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
 
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const result = await response.json();
+                const loadingEl = document.getElementById(loadingId);
+
+                if (result.type === 'table' && Array.isArray(result.data)) {
+                    if (result.data.length === 0) {
+                        loadingEl.textContent = "No records found matching your query.";
+                    } else {
+                        let html = '<table><thead><tr>';
+                        Object.keys(result.data[0]).forEach(k => html += `<th>${k}</th>`);
+                        html += '</tr></thead><tbody>';
+                        result.data.forEach(row => {
+                            html += '<tr>';
+                            Object.values(row).forEach(v => html += `<td>${v === null ? '' : v}</td>`);
+                            html += '</tr>';
+                        });
+                        html += '</tbody></table>';
+                        loadingEl.innerHTML = html;
+                    }
+                } else {
+                    loadingEl.textContent = result.data || "The analyst couldn't find an answer.";
+                }
+            } catch (err) {
+                document.getElementById(loadingId).textContent = "Error: Could not connect to AI server.";
+                console.error(err);
+            }
             chatHistory.scrollTop = chatHistory.scrollHeight;
             chatInput.value = '';
         }
 
-        sendBtn.addEventListener('click', handleSend);
-        chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSend(); });
+        sendBtn.onclick = askAI;
+        chatInput.onkeypress = (e) => { if(e.key === 'Enter') askAI(); };
 
-        // Lock & Hover Tracking States
+        // Map Selection State
         let hoveredStateId = null;
         let clickedTractId = null; 
 
