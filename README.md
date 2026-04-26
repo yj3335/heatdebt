@@ -45,6 +45,8 @@ Each component is computed as a percentile rank across all 2,327 NYC census trac
 
 **Why these weights?** Tree deficit gets the highest weight (30%) because it's the most actionable variable — a city can plant trees. Impervious surface and income get equal weight (25%) as contextual factors. Surface temperature gets the lowest weight (20%) because it's sampled at a single centroid point per tract rather than averaged across the area, making it less precise than the other components.
 
+![HeatDebtMap](HeatDebtMap.png)
+
 ## Architecture
 
 ```
@@ -262,6 +264,8 @@ Click the AI button in the bottom right to open the query dialog. Type a questio
 - "What is the temperature difference between the richest and poorest neighborhoods?"
 
 The top 20 most heat-indebted tracts are displayed by default when the dialog opens.
+
+![HeatDebtChat](HeatDebtChat.png)
 
 ## Limitations & Future Work
 
