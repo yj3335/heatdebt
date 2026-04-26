@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeatDebt — NYC Urban Heat Inequality</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #e0e0e0; }
+        #map { width: 100vw; height: 100vh; }
+        
+        /* Legend */
+        #legend {
+            position: absolute; bottom: 20px; left: 20px; background: rgba(10,10,10,0.92);
+            backdrop-filter: blur(12px); border-left: 1px solid rgba(255,255,255,0.08);
+            padding: 16px; border-radius: 6px; z-index: 999; font-size: 12px;
+        }
+        #legend h4 { margin: 0 0 12px 0; font-size: 13px; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+        .legend-item { display: flex; align-items: center; margin: 8px 0; }
+        .legend-color { width: 20px; height: 20px; margin-right: 8px; border-radius: 2px; }
+        .legend-label { font-size: 11px; color: #aaa; }
+        
+        /* Borough Filters */
+        #borough-filters {
+            position: absolute; top: 20px; left: 20px; background: rgba(10,10,10,0.92);
+            backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08);
+            padding: 12px; border-radius: 6px; z-index: 999; display: flex; gap: 8px; flex-wrap: wrap;
+            max-width: 250px;
+        }
+        .borough-btn {
+            padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+            background: transparent; color: #aaa; cursor: pointer; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;
+        }
+        .borough-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .borough-btn.active { background: rgba(100,200,255,0.3); border-color: rgba(100,200,255,0.6); color: #64c8ff; }
+        
+        #sidebar {
+            position: absolute; top: 0; right: 0; width: 380px; height: 100vh;
+            background: rgba(10,10,10,0.92); backdrop-filter: blur(12px);
+            z-index: 1000; overflow-y: auto; padding: 24px;
+            border-left: 1px solid rgba(255,255,255,0.08);
+        }
+        #sidebar h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; color: #fff; }
+        #sidebar .subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+        .tract-detail { display: none; }
+        .tract-detail.active { display: block; }
+        .tract-detail h2 { font-size: 16px; margin-bottom: 12px; color: #fff; }
+        .metric { display: flex; justify-content: space-between; padding: 8px 0;
+                   border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .metric-label { font-size: 13px; color: #999; }
+        .metric-value { font-size: 14px; font-weight: 600; color: #fff; }
+        
+        /* Component Score Bars */
+        .component-scores { margin: 16px 0; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .score-item { margin-bottom: 12px; }
+        .score-item:last-child { margin-bottom: 0; }
+        .score-label { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+        .score-name { color: #999; }
+        .score-val { color: #fff; font-weight: 600; }
+        .score-bar {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;
+        }
+        .score-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        .score-fill.tree { background: linear-gradient(90deg, #7cb342, #9ccc65); }
+        .score-fill.imperv { background: linear-gradient(90deg, #ff6f00, #ffb74d); }
+        .score-fill.income { background: linear-gradient(90deg, #d32f2f, #ff5252); }
+        
+        .score-badge {
+            display: inline-block; padding: 8px 16px; border-radius: 6px;
+            font-size: 28px; font-weight: 800; margin: 12px 0;
+            width: 100%; text-align: center;
+        }
+        #ranking { margin-top: 20px; }
+        #ranking h3 { font-size: 14px; color: #999; margin-bottom: 8px; text-transform: uppercase;
+                       letter-spacing: 1px; }
+        .rank-item {
+            display: flex; justify-content: space-between; padding: 8px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer;
+            font-size: 13px; border-radius: 4px; transition: all 0.2s;
+        }
+        .rank-item:hover { background: rgba(100,200,255,0.15); transform: translateX(-4px); }
+        .rank-num { color: #666; width: 24px; font-weight: 600; }
+        .rank-name { flex: 1; color: #ccc; }
+        .rank-score { font-weight: 600; }
+        .info-box {
+            background: rgba(255,100,50,0.08); border: 1px solid rgba(255,100,50,0.2);
+            border-radius: 6px; padding: 12px; margin: 16px 0; font-size: 12px;
+            color: #ccc; line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <!-- Borough Filter Buttons -->
+    <div id="borough-filters">
+        <button class="borough-btn active" data-borough="all">All</button>
+        <button class="borough-btn" data-borough="Manhattan">Manhattan</button>
+        <button class="borough-btn" data-borough="Bronx">Bronx</button>
+        <button class="borough-btn" data-borough="Brooklyn">Brooklyn</button>
+        <button class="borough-btn" data-borough="Queens">Queens</button>
+        <button class="borough-btn" data-borough="Staten Island">Staten Island</button>
+    </div>
+    
+    <!-- Legend -->
+    <div id="legend">
+        <h4>Heat Debt Score</h4>
+        <div class="legend-item"><div class="legend-color" style="background:#ffffb2"></div><span class="legend-label">0.0 - 0.1</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fed976"></div><span class="legend-label">0.1 - 0.2</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#feb24c"></div><span class="legend-label">0.2 - 0.35</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fd8d3c"></div><span class="legend-label">0.35 - 0.5</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#fc4e2a"></div><span class="legend-label">0.5 - 0.65</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#e31a1c"></div><span class="legend-label">0.65 - 0.8</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#b10026"></div><span class="legend-label">0.8+</span></div>
+    </div>
+    
+    <div id="sidebar">
+        <h1>HeatDebt</h1>
+        <p class="subtitle">NYC Urban Heat Inequality Auditor</p>
+        <div class="info-box">
+            Click any census tract to inspect its Heat Debt Score.
+            Darker red = higher heat inequity. Use filters to explore by borough.
+        </div>
+        <div id="tract-detail" class="tract-detail">
+            <h2 id="detail-name"></h2>
+            <div class="score-badge" id="detail-score"></div>
+            
+            <div class="component-scores">
+                <div class="score-item">
+                    <div class="score-label">
+                        <span class="score-name">🌳 Tree Score</span>
+                        <span class="score-val" id="score-tree-val"></span>
+                    </div>
+                    <div class="score-bar"><div class="score-fill tree" id="score-tree-bar"></div></div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">
+                        <span class="score-name">🏗️ Impervious Surface</span>
+                        <span class="score-val" id="score-imperv-val"></span>
+                    </div>
+                    <div class="score-bar"><div class="score-fill imperv" id="score-imperv-bar"></div></div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">
+                        <span class="score-name">💰 Income Vulnerability</span>
+                        <span class="score-val" id="score-income-val"></span>
+                    </div>
+                    <div class="score-bar"><div class="score-fill income" id="score-income-bar"></div></div>
+                </div>
+            </div>
+            
+            <div class="metric"><span class="metric-label">Street Trees</span>
+                <span class="metric-value" id="detail-trees"></span></div>
+            <div class="metric"><span class="metric-label">Impervious Surface</span>
+                <span class="metric-value" id="detail-imperv"></span></div>
+            <div class="metric"><span class="metric-label">Median Income</span>
+                <span class="metric-value" id="detail-income"></span></div>
+        </div>
+        <div id="ranking">
+            <h3>Top 20 Most Heat-Indebted Tracts</h3>
+            <div id="rank-list"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map', {
+            center: [40.7128, -74.0060],
+            zoom: 11,
+            zoomControl: false
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CartoDB',
+            maxZoom: 19
+        }).addTo(map);
+
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+        // Improved color scale with more nuance
+        function getColor(score) {
+            if (score > 0.85) return '#670027';
+            if (score > 0.8) return '#b10026';
+            if (score > 0.75) return '#d73027';
+            if (score > 0.65) return '#e31a1c';
+            if (score > 0.55) return '#fc4e2a';
+            if (score > 0.45) return '#fd8d3c';
+            if (score > 0.35) return '#fdae61';
+            if (score > 0.25) return '#fee090';
+            if (score > 0.15) return '#fed976';
+            if (score > 0.05) return '#ffffbf';
+            return '#ffffb2';
+        }
+
+        let currentBorough = 'all';
+        let allData = null;
+        let geojsonLayer = null;
+
+        function style(feature) {
+            return {
+                fillColor: getColor(feature.properties.heat_debt_score),
+                weight: 0.5,
+                opacity: 0.8,
+                color: 'rgba(255,255,255,0.15)',
+                fillOpacity: 0.75
+            };
+        }
+
+        function showDetail(props) {
+            const el = document.getElementById('tract-detail');
+            el.classList.add('active');
+            document.getElementById('detail-name').textContent =
+                props.tract_name + ' (' + props.tract_id + ') — ' + (props.borough || 'Unknown');
+            
+            const scoreEl = document.getElementById('detail-score');
+            scoreEl.textContent = (props.heat_debt_score * 100).toFixed(1) + ' / 100';
+            scoreEl.style.background = getColor(props.heat_debt_score);
+            scoreEl.style.color = props.heat_debt_score > 0.5 ? '#fff' : '#000';
+            
+            // Component scores
+            const treeScore = props.tree_deficit_score || 0;
+            const impervScore = props.impervious_score || 0;
+            const incomeScore = props.income_vuln_score || 0;
+            
+            document.getElementById('score-tree-val').textContent = (treeScore * 100).toFixed(0);
+            document.getElementById('score-tree-bar').style.width = (treeScore * 100) + '%';
+            
+            document.getElementById('score-imperv-val').textContent = (impervScore * 100).toFixed(0);
+            document.getElementById('score-imperv-bar').style.width = (impervScore * 100) + '%';
+            
+            document.getElementById('score-income-val').textContent = (incomeScore * 100).toFixed(0);
+            document.getElementById('score-income-bar').style.width = (incomeScore * 100) + '%';
+            
+            document.getElementById('detail-trees').textContent = props.tree_count.toLocaleString();
+            document.getElementById('detail-imperv').textContent = 
+                (props.impervious_pct || 0).toFixed(1) + '%';
+            document.getElementById('detail-income').textContent =
+                props.median_income > 0 ? '$' + props.median_income.toLocaleString() : 'N/A';
+        }
+
+        function filterByBorough(borough) {
+            currentBorough = borough;
+            
+            // Update button states
+            document.querySelectorAll('.borough-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.borough === borough);
+            });
+            
+            // Update map
+            if (geojsonLayer) {
+                map.removeLayer(geojsonLayer);
+            }
+            
+            let filteredData = allData;
+            if (borough !== 'all') {
+                filteredData = {
+                    ...allData,
+                    features: allData.features.filter(f => f.properties.borough === borough)
+                };
+            }
+            
+            geojsonLayer = L.geoJSON(filteredData, {
+                style: style,
+                onEachFeature: (feature, layer) => {
+                    layer.on('click', () => showDetail(feature.properties));
+                    layer.on('mouseover', () => {
+                        layer.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.9 });
+                    });
+                    layer.on('mouseout', () => geojsonLayer.resetStyle(layer));
+                }
+            }).addTo(map);
+        }
+
+        // Borough filter buttons
+        document.querySelectorAll('.borough-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterByBorough(btn.dataset.borough);
+            });
+        });
+
+        // Load GeoJSON
+        fetch('tracts.geojson')
+            .then(r => r.json())
+            .then(data => {
+                allData = data;
+                
+                // Initialize with all data
+                filterByBorough('all');
+
+                // Populate ranking sidebar
+                const sorted = data.features
+                    .sort((a, b) => b.properties.heat_debt_score - a.properties.heat_debt_score)
+                    .slice(0, 20);
+                const rankList = document.getElementById('rank-list');
+                rankList.innerHTML = '';
+                
+                sorted.forEach((f, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'rank-item';
+                    div.innerHTML = `
+                        <span class="rank-num">${i + 1}</span>
+                        <span class="rank-name">${f.properties.tract_name}</span>
+                        <span class="rank-score" style="color:${getColor(f.properties.heat_debt_score)}">
+                            ${(f.properties.heat_debt_score * 100).toFixed(1)}
+                        </span>`;
+                    div.onclick = () => {
+                        showDetail(f.properties);
+                        // Zoom to tract bounds with padding
+                        const bounds = L.geoJSON(f).getBounds();
+                        map.fitBounds(bounds, { padding: [100, 400] });
+                    };
+                    rankList.appendChild(div);
+                });
+            });
+    </script>
+</body>
+</html>
